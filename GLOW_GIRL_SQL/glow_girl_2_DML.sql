@@ -1,152 +1,173 @@
 -- =====================================================================
--- DML - LENGUAJE DE MANIPULACIÓN DE DATOS (GLOW GIRL)
+-- DML - LENGUAJE DE MANIPULACIÓN DE DATOS (MODELO RELACIONAL GLOW GIRL)
 -- =====================================================================
 
 USE glow_girl;
 
--- ---------------------------------------------------------------------
--- A. INSERTAR PELUQUERÍAS AFILIADAS (Con sus nombres propios y ciudades)
--- ---------------------------------------------------------------------
-INSERT INTO peluquerias (nit, nombre_salon, direccion, ciudad, telefono, email, estado) VALUES
-('900123456-1', 'Luxury Hair & Spa', 'Calle 93 # 15-42', 'Bogota', '3101112233', 'contacto@luxuryhair.com', 'Activa'),
-('900654321-2', 'Studio Élite Nails & Makeup', 'Cra. 43A # 10-21', 'Medellin', '3202223344', 'info@elite-studio.com', 'Activa'),
-('900987654-3', 'Peluquería Sensación Cali', 'Calle 5 # 38-10', 'Cali', '3153334455', 'citas@sensacioncali.com', 'Activa'),
-('900112233-4', 'Caribe Lash & Skincare', 'Calle 72 # 54-21', 'Barranquilla', '3004445566', 'caribeskincare@correo.com', 'Pendiente'),
-('900445566-5', 'Encanto Estética Integral', 'Cra. 7 # 22-14', 'Pereira', '3125556677', 'encanto@estetica.com', 'Activa');
+-- 1. Ciudad
+INSERT INTO Ciudad (ciudad) VALUES
+('Bogota'),
+('Medellin'),
+('Cali'),
+('Barranquilla'),
+('Pereira');
 
--- ---------------------------------------------------------------------
--- B. INSERTAR CATEGORÍAS DE SERVICIOS
--- ---------------------------------------------------------------------
-INSERT INTO categorias_servicios (nombre, descripcion) VALUES
-('Peluquería', 'Cortes, tintes, cepillados y tratamientos capilares'),
-('Nails', 'Manicure, pedicure, uñas acrílicas y semipermanentes'),
-('Lashista', 'Extensiones de pestañas pelo a pelo y lifting'),
-('Skincare', 'Limpiezas faciales profundas e hidratación'),
-('Makeup', 'Maquillaje profesional para eventos y sociales');
+-- 2. Fotospe
+INSERT INTO Fotospe (fotos) VALUES
+('salon_luxury_1.jpg'),
+('salon_elite_1.jpg'),
+('salon_sensacion_1.jpg'),
+('salon_caribe_1.jpg'),
+('salon_encanto_1.jpg');
 
--- ---------------------------------------------------------------------
--- C. INSERTAR SERVICIOS (Asociados a cada peluquería independiente)
--- ---------------------------------------------------------------------
-INSERT INTO servicios (id_categoria, id_peluqueria, nombre, descripcion, precio, duracion_minutos, activo) VALUES
-(1, 1, 'Corte Moderno y Blower', 'Corte con asesoría de imagen y cepillado', 50000.00, 50, TRUE),
-(1, 1, 'Balayage Premium', 'Técnica de coloración en tendencia', 250000.00, 180, TRUE),
-(2, 2, 'Manicure Semipermanente', 'Esmaltado de larga duración', 35000.00, 60, TRUE),
-(2, 2, 'Uñas Acrílicas Esculpidas', 'Extensiones en acrílico con diseño', 95000.00, 120, TRUE),
-(3, 3, 'Extensiones Pelo a Pelo', 'Efecto rímel natural', 90000.00, 90, TRUE),
-(4, 4, 'Limpieza Facial Profunda', 'Incluye alta frecuencia y vapor', 120000.00, 75, TRUE),
-(5, 3, 'Maquillaje Social y Glam', 'Maquillaje profesional de alta duración', 110000.00, 60, TRUE),
-(1, 5, 'Tratamiento de Keratina', 'Alisado e hidratación profunda', 160000.00, 120, TRUE),
-(3, 1, 'Lifting de Pestañas', 'Curvatura orgánica con nutrición', 75000.00, 45, TRUE),
-(2, 5, 'Pedicure Spa Relax', 'Exfoliación, mascarilla y esmalte', 45000.00, 50, TRUE);
+-- 3. Peluqueria
+INSERT INTO Peluqueria (horapeluque, direccion, nombre, Ciudadid_ciudad, Fotospeid_fotospe) VALUES
+('08:00-20:00', 'Calle 93 # 15-42', 'Luxury Hair', 1, 1),
+('09:00-19:00', 'Cra. 43A # 10-21', 'Studio Elite', 2, 2),
+('08:30-19:30', 'Calle 5 # 38-10', 'Sensacion Cali', 3, 3),
+('09:00-18:00', 'Calle 72 # 54-21', 'Caribe Lash', 4, 4),
+('08:00-19:00', 'Cra. 7 # 22-14', 'Encanto Estetica', 5, 5);
 
--- ---------------------------------------------------------------------
--- D. INSERTAR PROFESIONALES DE CADA SALÓN
--- ---------------------------------------------------------------------
-INSERT INTO profesionales (id_peluqueria, nombres, apellidos, especialidad, activo) VALUES
-(1, 'Camila', 'Rojas Soto', 'Master Colorista', TRUE),
-(1, 'Andrea', 'Pérez Gómez', 'Especialista Capilar', TRUE),
-(2, 'Julian', 'Mejía Marín', 'Nail Artist', TRUE),
-(3, 'Sofia', 'Castillo Ruiz', 'Lashista Profesional', TRUE),
-(4, 'Marcela', 'Henao Restrepo', 'Cosmetóloga', TRUE),
-(5, 'Diana', 'Torres Melo', 'Estilista Integral', TRUE);
+-- 4. Trabajador
+INSERT INTO Trabajador (nom_tra, ape_tra, Peluqueriaid_peluqueria) VALUES
+('Camila', 'Rojas Soto', 1),
+('Andrea', 'Perez Gomez', 1),
+('Julian', 'Mejia Marin', 2),
+('Sofia', 'Castillo Ruiz', 3),
+('Marcela', 'Henao Restrepo', 4),
+('Diana', 'Torres Melo', 5);
 
--- ---------------------------------------------------------------------
--- E. INSERTAR CLIENTES
--- ---------------------------------------------------------------------
-INSERT INTO clientes (tipo_documento, numero_documento, nombres, apellidos, email, telefono, ciudad_residencia) VALUES
-('CC', '1001001001', 'Ana Maria', 'Gomez Ruiz', 'ana.gomez@correo.com', '3001112233', 'Bogota'),
-('CC', '1002002002', 'Carlos Andres', 'Perez Diaz', 'carlos.perez@correo.com', '3002223344', 'Medellin'),
-('CC', '1003003003', 'Luisa Fernanda', 'Martinez Rios', 'luisa.martinez@correo.com', '3023334455', 'Cali'),
-('TI', '1004004004', 'Juan David', 'Restrepo Toro', 'juan.restrepo@correo.com', '3034445566', 'Bogota'),
-('CE', '1005005005', 'Valentina', 'Herrera Lopez', 'valentina.herrera@correo.com', '3045556677', 'Barranquilla'),
-('CC', '1006006006', 'Santiago', 'Ramirez Castro', 'santiago.ramirez@correo.com', '3056667788', 'Medellin'),
-('CC', '1007007007', 'Daniela', 'Ospina Vargas', 'daniela.ospina@correo.com', '3066677888', 'Pereira');
+-- 5. Horario
+INSERT INTO Horario (dia_sem, hora_ini, horafin, estado, Trabajadorid_trab) VALUES
+(2, '08:00', '17:00', 'Disponible', 1),
+(3, '09:00', '18:00', 'Disponible', 2),
+(4, '09:00', '19:00', 'Disponible', 3),
+(5, '10:00', '19:00', 'Disponible', 4),
+(6, '08:00', '16:00', 'Disponible', 5);
 
--- ---------------------------------------------------------------------
--- F. INSERTAR CITAS DE PRUEBA
--- ---------------------------------------------------------------------
-INSERT INTO citas (id_cliente, id_peluqueria, id_servicio, id_profesional, fecha_hora_cita, estado, calificacion, comentario_calificacion) VALUES
-(1, 1, 1, 1, '2026-08-01 10:15:00', 'Finalizada', 5, 'Excelente atención en Luxury Hair'),
-(2, 2, 3, 3, '2026-08-03 14:30:00', 'Finalizada', 4, 'Hermosas uñas en Studio Élite'),
-(1, 1, 9, 2, '2026-08-10 09:00:00', 'Finalizada', 5, 'Muy buen resultado'),
-(3, 3, 5, 4, '2026-08-15 16:45:00', 'Finalizada', 5, 'Las pestañas quedaron perfectas'),
-(4, 1, 2, 1, '2026-08-20 11:20:00', 'Cancelada', NULL, NULL),
-(5, 4, 6, 5, '2026-09-02 08:10:00', 'Pendiente', NULL, NULL),
-(6, 3, 7, 4, '2026-09-05 19:00:00', 'Finalizada', 4, 'Excelente maquillaje social'),
-(2, 5, 8, 6, '2026-09-12 12:00:00', 'Confirmada', NULL, NULL);
+-- 6. Categoria
+INSERT INTO Categoria (categoria) VALUES
+('Peluqueria'),
+('Nails'),
+('Lashista'),
+('Skincare'),
+('Makeup');
+
+-- 7. Fotosser
+INSERT INTO Fotosser (fotosser) VALUES
+('corte_blower.jpg'),
+('balayage.jpg'),
+('manicure_semi.jpg'),
+('unas_acrilicas.jpg'),
+('pestanas_pelo.jpg'),
+('limpieza_facial.jpg');
+
+-- 8. Servicio (descripci es INT(10) según el diagrama)
+INSERT INTO Servicio (servicio, precio_ser, durac_ser, descripci, id_categ, id_fotosser) VALUES
+('Corte Moderno', 50.000, 50, 101, 1, 1),
+('Balayage Premium', 250.000, 180, 102, 1, 2),
+('Manicure Semi', 35.000, 60, 103, 2, 3),
+('Unas Acrilicas', 95.000, 120, 104, 2, 4),
+('Pestanas Pelo a Pelo', 90.000, 90, 105, 3, 5),
+('Limpieza Facial', 120.000, 75, 106, 4, 6);
+
+-- 9. Trabajador_Servicio
+INSERT INTO Trabajador_Servicio (Trabajadorid_trab, Servicioid_servicio, estado) VALUES
+(1, 1, 'Activo'),
+(1, 2, 'Activo'),
+(2, 1, 'Activo'),
+(3, 3, 'Activo'),
+(3, 4, 'Activo'),
+(4, 5, 'Activo'),
+(5, 6, 'Activo');
+
+-- 10. Tipodocumento (tdoc es TINYINT(3) según el diagrama)
+INSERT INTO Tipodocumento (tdoc) VALUES
+(1),
+(2),
+(3);
+
+-- 11. Cliente
+INSERT INTO Cliente (nom_clien, ape_clie, numdoc, tlf, correo, Tipodocumentoid_tdoc) VALUES
+('Ana Maria', 'Gomez Ruiz', '1001001001', '3001112233', 'ana@correo.com', 1),
+('Carlos', 'Perez Diaz', '1002002002', '3002223344', 'carlos@correo.com', 1),
+('Luisa', 'Martinez Rios', '1003003003', '3023334455', 'luisa@correo.com', 1),
+('Juan David', 'Restrepo', '1004004004', '3034445566', 'juan@correo.com', 2),
+('Valentina', 'Herrera', '1005005005', '3045556677', 'val@correo.com', 3);
+
+-- 12. login (Clave de prueba: 'Clave123*' cifrada con SALT + SHA2(..., 256);
+-- si en el DDL `pass` es VARCHAR(8), LEFT(..., 8) evita truncamiento o puedes cambiar `pass` a CHAR(64))
+INSERT INTO `login` (`user`, id_User, pass) VALUES
+('ana_gomez', 1, LEFT(SHA2(CONCAT('abc123salt1', 'Clave123*'), 256), 8)),
+('carlos_p', 2, LEFT(SHA2(CONCAT('xyz789salt2', 'Clave123*'), 256), 8)),
+('luisa_m', 3, LEFT(SHA2(CONCAT('qwe456salt3', 'Clave123*'), 256), 8));
+
+-- 13. Estadocita
+INSERT INTO Estadocita (escita) VALUES
+('Pendiente'),
+('Confirmada'),
+('Finalizada'),
+('Cancelada');
+
+-- 14. Reserva
+INSERT INTO Reserva (fechor_cita, Estadocitaid_escita, Clienteid_cliente) VALUES
+('2026-11-25 10:00', '3', 1),
+('2026-11-26 14:30', '2', 2),
+('2026-11-27 09:00', '1', 3),
+('2026-11-28 16:00', '4', 4);
+
+-- 15. Reserva_Servicio
+INSERT INTO Reserva_Servicio (Reservaid_reserva, Servicioid_servicio, id_trab, hora_inicio, hora_fin, Valor, id_escita) VALUES
+(1, 1, 1, '10:00', '10:50', '50000', 3),
+(2, 3, 3, '14:30', '15:30', '35000', 2),
+(3, 5, 4, '09:00', '10:30', '90000', 1),
+(4, 2, 1, '16:00', '19:00', '250000', 4);
+
+-- 16. Solicitudafi
+INSERT INTO Solicitudafi (nom_prop, docu_prop, tlf, correo, estado, fecha_sol, nom_peluq, direccion, ciudad, fotos_peluq, descripcion) VALUES
+('Laura Sofia', '1099887766', '3112223344', 'laura@salon.com', 'Pendiente', '2026-11-20', 'Glow Studio', 'Calle 80 # 12-5', 'Bogota', 'glow1.jpg', 'Salon de nails y lashes');
 
 -- =====================================================================
--- G.SECCIÓN: INSERTAR USUARIOS DE PRUEBA (Control de Acceso y Seguridad)
--- ¿Qué hace este código?: Inserta los usuarios para el inicio de sesión 
--- en el aplicativo web Glow Girl, asignando roles (CLIENTE, ADMIN) y 
--- asegurando el cifrado de las contraseñas.
--- NOTA: La contraseña en texto plano para iniciar sesión con todos es: "password"
+-- CONSULTAS DE PRUEBA
 -- =====================================================================
-INSERT INTO usuarios (id_cliente, nombre_usuario, email, password_hash, salt, rol, activo, intentos_fallidos, bloqueado) VALUES
--- password_hash: Guarda la contraseña cifrada de forma irreversible con SHA-256 (Texto plano original: "password")
--- salt: Es una cadena aleatoria extra que se le añade a la clave antes de cifrarla por seguridad
-(1, 'ana_gomez', 'ana.gomez@correo.com', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', 'abc123saltsecure4567890123456789ab', 'CLIENTE', TRUE, 0, FALSE),
 
--- Usuario 2: Cliente Carlos (Contraseña original en texto plano: "password")
-(2, 'carlos_perez', 'carlos.perez@correo.com', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', 'xyz789saltsecure1234567890123456xy', 'CLIENTE', TRUE, 0, FALSE),
+-- 1. INNER JOIN: Ver reservas con cliente, servicio y trabajador
+SELECT
+    r.id_reserva,
+    CONCAT(cl.nom_clien, ' ', cl.ape_clie) AS cliente,
+    s.servicio,
+    CONCAT(t.nom_tra, ' ', t.ape_tra) AS trabajador,
+    rs.hora_inicio,
+    rs.hora_fin,
+    ec.escita AS estado_cita
+FROM Reserva r
+INNER JOIN Cliente cl ON r.Clienteid_cliente = cl.id_cliente
+INNER JOIN Reserva_Servicio rs ON r.id_reserva = rs.Reservaid_reserva
+INNER JOIN Servicio s ON rs.Servicioid_servicio = s.id_servicio
+INNER JOIN Trabajador t ON rs.id_trab = t.id_trab
+INNER JOIN Estadocita ec ON rs.id_escita = ec.id_escita;
 
--- Usuario 3: Administrador general del sistema (Contraseña original en texto plano: "password")
-(NULL, 'admin_general', 'admin@glowgirl.com', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', 'adminsecuretoken99988877766654321a', 'ADMIN_GENERAL', TRUE, 0, FALSE),
+-- 2. GROUP BY con COUNT y AVG por categoría de servicio
+SELECT
+    c.categoria,
+    COUNT(s.id_servicio) AS total_servicios,
+    AVG(s.precio_ser) AS precio_promedio
+FROM Categoria c
+LEFT JOIN Servicio s ON c.id_categ = s.id_categ
+GROUP BY c.id_categ, c.categoria;
 
--- Usuario 4: Administrador de una peluquería afiliada (Contraseña original en texto plano: "password")
-(NULL, 'admin_luxury', 'contacto@luxuryhair.com', '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', 'salthelperluxury11122233344455566', 'ADMIN_PELUQUERIA', TRUE, 0, FALSE);
-----------------------------------------------------------------------------
--- H. Insertar registros de prueba en la tabla notificaciones vinculados a las citas existentes
-----------------------------------------------------------------------------
-INSERT INTO notificaciones (id_cita, tipo_mensaje, canal, estado_envio) VALUES
-(1, 'RECORDATORIO_24H', 'EMAIL', 'Enviada'),
-(2, 'RECORDATORIO_24H', 'WHATSAPP', 'Enviada'),
-(3, 'RECORDATORIO_24H', 'EMAIL', 'Enviada');
--- ---------------------------------------------------------------------
--- I. CONSULTAS CON FILTROS, ORDEN, LÍMITES, JOINS Y AGRUPACIONES
--- ---------------------------------------------------------------------
+-- 3. Subconsulta: Servicios con precio superior al promedio
+SELECT servicio, precio_ser
+FROM Servicio
+WHERE precio_ser > (SELECT AVG(precio_ser) FROM Servicio);
 
--- 1. Consulta con JOIN múltiple: Ver citas mostrando el nombre de la peluquería, la ciudad y el servicio
-SELECT 
-    c.id_cita,
-    CONCAT(cl.nombres, ' ', cl.apellidos) AS cliente,
-    p.nombre_salon AS peluqueria,
-    p.ciudad AS ciudad_salon,
-    s.nombre AS servicio,
-    c.fecha_hora_cita,
-    c.estado
-FROM citas c
-INNER JOIN clientes cl ON c.id_cliente = cl.id_cliente
-INNER JOIN peluquerias p ON c.id_peluqueria = p.id_peluqueria
-INNER JOIN servicios s ON c.id_servicio = s.id_servicio;
+-- 4. UPDATE: Cambiar estado de un horario
+UPDATE Horario
+SET estado = 'Ocupado'
+WHERE id_hor = 1;
 
--- 2. Filtros con WHERE y operadores lógicos (Servicios en rango de precio)
-SELECT nombre, precio, duracion_minutos
-FROM servicios
-WHERE precio BETWEEN 40000 AND 120000
-ORDER BY precio ASC;
+-- 5. DELETE: Eliminar un registro de prueba en Solicitudafi
+DELETE FROM Solicitudafi
+WHERE id_solicitud = 1;
 
--- 3. Agrupación (GROUP BY) y Agregación: Conocer cuántos servicios ofrece cada peluquería afiliada
-SELECT 
-    p.nombre_salon,
-    p.ciudad,
-    COUNT(s.id_servicio) AS total_servicios_ofrecidos,
-    AVG(s.precio) AS precio_promedio
-FROM peluquerias p
-LEFT JOIN servicios s ON p.id_peluqueria = s.id_peluqueria
-GROUP BY p.id_peluqueria, p.nombre_salon, p.ciudad;
-
--- 4. Subconsulta: Mostrar los servicios cuyo precio supere el promedio general
-SELECT nombre, precio
-FROM servicios
-WHERE precio > (SELECT AVG(precio) FROM servicios);
-
--- 5. Actualizar (UPDATE) un dato de prueba
-UPDATE peluquerias 
-SET estado = 'Activa' 
-WHERE ciudad = 'Barranquilla';
-
--- 6. Eliminar (DELETE) una cita de prueba cancelada
-DELETE FROM citas 
-WHERE estado = 'Cancelado';
 

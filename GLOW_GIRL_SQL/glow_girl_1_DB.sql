@@ -1,182 +1,229 @@
 -- =====================================================================
--- DDL - PROYECTO GLOW GIRL
--- Lenguaje de Definición de Datos para la plataforma de belleza y citas
+-- DDL - MODELO RELACIONAL GLOW GIRL (según diagrama)
 -- =====================================================================
 
 DROP DATABASE IF EXISTS glow_girl;
 
-CREATE DATABASE glow_girl 
-CHARACTER SET utf8mb4 
+CREATE DATABASE glow_girl
+CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
 USE glow_girl;
 
--- ---------------------------------------------------------------------
--- 1. TABLA CATEGORÍAS DE SERVICIOS
--- ---------------------------------------------------------------------
-CREATE TABLE categorias_servicios (
-    id_categoria INT NOT NULL AUTO_INCREMENT,
-    nombre VARCHAR(50) NOT NULL, -- Peluquería, Nails, Lashista, Skincare, Makeup
-    descripcion VARCHAR(255) NULL,
-    CONSTRAINT pk_categorias PRIMARY KEY (id_categoria),
-    CONSTRAINT uq_categorias_nombre UNIQUE (nombre)
+-- 1. Ciudad
+CREATE TABLE Ciudad (
+    id_ciudad INT(10) NOT NULL AUTO_INCREMENT,
+    ciudad VARCHAR(50) NOT NULL,
+    CONSTRAINT pk_ciudad PRIMARY KEY (id_ciudad)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- 2. TABLA PELUQUERÍAS (Establecimientos independientes afiliados al sistema)
--- ---------------------------------------------------------------------
-CREATE TABLE peluquerias (
-    id_peluqueria INT NOT NULL AUTO_INCREMENT,
-    nit VARCHAR(20) NOT NULL,
-    nombre_salon VARCHAR(100) NOT NULL, -- Nombres propios (ej. Luxury Salon, Estética Bella, etc.)
-    direccion VARCHAR(100) NOT NULL,
-    ciudad VARCHAR(50) NOT NULL,        -- Ciudad de ubicación en Colombia
-    telefono VARCHAR(20) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente', -- Pendiente, Activa, Inactiva, Suspendida
-    activo BOOLEAN NOT NULL DEFAULT TRUE,
-    fecha_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_peluquerias PRIMARY KEY (id_peluqueria),
-    CONSTRAINT uq_peluquerias_nit UNIQUE (nit),
-    CONSTRAINT uq_peluquerias_email UNIQUE (email),
-    CONSTRAINT ck_peluquerias_estado CHECK (estado IN ('Pendiente','Activa','Inactiva','Suspendida'))
+-- 2. Fotospe
+CREATE TABLE Fotospe (
+    id_fotospe INT(10) NOT NULL AUTO_INCREMENT,
+    fotos VARCHAR(255) NOT NULL,
+    CONSTRAINT pk_fotospe PRIMARY KEY (id_fotospe)
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- 3. TABLA SERVICIOS 
--- ---------------------------------------------------------------------
-CREATE TABLE servicios (
-    id_servicio INT NOT NULL AUTO_INCREMENT,
-    id_categoria INT NOT NULL,
-    id_peluqueria INT NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    descripcion TEXT NULL,
-    precio DECIMAL(12,2) NOT NULL,
-    duracion_minutos INT NOT NULL, 
-    activo BOOLEAN NOT NULL DEFAULT TRUE,
-    fecha_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_servicios PRIMARY KEY (id_servicio),
-    CONSTRAINT ck_servicios_precio CHECK (precio > 0 AND precio <= 50000000),
-    CONSTRAINT ck_servicios_duracion CHECK (duracion_minutos > 0),
-    CONSTRAINT fk_servicios_categorias FOREIGN KEY (id_categoria)
-        REFERENCES categorias_servicios (id_categoria)
+-- 3. Peluqueria
+CREATE TABLE Peluqueria (
+    id_peluqueria INT(10) NOT NULL AUTO_INCREMENT,
+    horapeluque VARCHAR(20) NOT NULL,
+    direccion VARCHAR(20) NOT NULL,
+    nombre VARCHAR(20) NOT NULL,
+    Ciudadid_ciudad INT(10) NOT NULL,
+    Fotospeid_fotospe INT(10) NOT NULL,
+    CONSTRAINT pk_peluqueria PRIMARY KEY (id_peluqueria),
+    CONSTRAINT fk_peluqueria_ciudad FOREIGN KEY (Ciudadid_ciudad)
+        REFERENCES Ciudad (id_ciudad)
         ON DELETE RESTRICT
         ON UPDATE CASCADE,
-    CONSTRAINT fk_servicios_peluquerias FOREIGN KEY (id_peluqueria)
-        REFERENCES peluquerias (id_peluqueria)
-        ON DELETE CASCADE
+    CONSTRAINT fk_peluqueria_fotospe FOREIGN KEY (Fotospeid_fotospe)
+        REFERENCES Fotospe (id_fotospe)
+        ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- 4. TABLA PROFESIONALES 
--- ---------------------------------------------------------------------
-CREATE TABLE profesionales (
-    id_profesional INT NOT NULL AUTO_INCREMENT,
-    id_peluqueria INT NOT NULL,
-    nombres VARCHAR(60) NOT NULL,
-    apellidos VARCHAR(60) NOT NULL,
-    especialidad VARCHAR(100) NOT NULL,
-    activo BOOLEAN NOT NULL DEFAULT TRUE,
-    CONSTRAINT pk_profesionales PRIMARY KEY (id_profesional),
-    CONSTRAINT fk_profesionales_peluquerias FOREIGN KEY (id_peluqueria)
-        REFERENCES peluquerias (id_peluqueria)
-        ON DELETE CASCADE
+-- 4. Trabajador
+CREATE TABLE Trabajador (
+    id_trab INT(10) NOT NULL AUTO_INCREMENT,
+    nom_tra VARCHAR(50) NOT NULL,
+    ape_tra VARCHAR(50) NOT NULL,
+    Peluqueriaid_peluqueria INT(10) NOT NULL,
+    CONSTRAINT pk_trabajador PRIMARY KEY (id_trab),
+    CONSTRAINT fk_trabajador_peluqueria FOREIGN KEY (Peluqueriaid_peluqueria)
+        REFERENCES Peluqueria (id_peluqueria)
+        ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- 5. TABLA CLIENTES 
--- ---------------------------------------------------------------------
-CREATE TABLE clientes (
-    id_cliente INT NOT NULL AUTO_INCREMENT,
-    tipo_documento VARCHAR(5) NOT NULL DEFAULT 'CC',
-    numero_documento VARCHAR(20) NOT NULL,
-    nombres VARCHAR(60) NOT NULL,
-    apellidos VARCHAR(60) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    telefono VARCHAR(20) NOT NULL,
-    ciudad_residencia VARCHAR(50) NOT NULL,
-    fecha_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_clientes PRIMARY KEY (id_cliente),
-    CONSTRAINT uq_clientes_documento UNIQUE (numero_documento),
-    CONSTRAINT uq_clientes_email UNIQUE (email),
-    CONSTRAINT ck_clientes_tipo_doc CHECK (tipo_documento IN ('CC','TI','CE','PASS'))
+-- 5. Horario
+CREATE TABLE Horario (
+    id_hor INT(10) NOT NULL AUTO_INCREMENT,
+    dia_sem INT(10) NOT NULL,
+    hora_ini VARCHAR(20) NOT NULL,
+    horafin VARCHAR(20) NOT NULL,
+    estado VARCHAR(50) NOT NULL,
+    Trabajadorid_trab INT(10) NOT NULL,
+    CONSTRAINT pk_horario PRIMARY KEY (id_hor),
+    CONSTRAINT fk_horario_trabajador FOREIGN KEY (Trabajadorid_trab)
+        REFERENCES Trabajador (id_trab)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- 6. TABLA CITAS 
--- ---------------------------------------------------------------------
-CREATE TABLE citas (
-    id_cita INT NOT NULL AUTO_INCREMENT,
-    id_cliente INT NOT NULL,
-    id_peluqueria INT NOT NULL,
-    id_servicio INT NOT NULL,
-    id_profesional INT NOT NULL,
-    fecha_hora_cita DATETIME NOT NULL,
-    estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente', 
-    calificacion INT NULL, 
-    comentario_calificacion TEXT NULL,
-    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_citas PRIMARY KEY (id_cita),
-    CONSTRAINT ck_citas_estado CHECK (estado IN ('Pendiente','Confirmada','Finalizada','Cancelada')),
-    CONSTRAINT ck_citas_calificacion CHECK (calificacion BETWEEN 1 AND 5),
-    CONSTRAINT fk_citas_clientes FOREIGN KEY (id_cliente)
-        REFERENCES clientes (id_cliente)
+-- 6. Categoria
+CREATE TABLE Categoria (
+    id_categ INT(10) NOT NULL AUTO_INCREMENT,
+    categoria VARCHAR(20) NOT NULL,
+    CONSTRAINT pk_categoria PRIMARY KEY (id_categ)
+) ENGINE = InnoDB;
+
+-- 7. Fotosser
+CREATE TABLE Fotosser (
+    id_fotosser INT(10) NOT NULL AUTO_INCREMENT,
+    fotosser VARCHAR(255) NOT NULL,
+    CONSTRAINT pk_fotosser PRIMARY KEY (id_fotosser)
+) ENGINE = InnoDB;
+
+-- 8. Servicio
+CREATE TABLE Servicio (
+    id_servicio INT(10) NOT NULL AUTO_INCREMENT,
+    servicio VARCHAR(30) NOT NULL,
+    precio_ser DECIMAL(10,3) NOT NULL,
+    durac_ser INT(3) NOT NULL,
+    descripci INT(10) NOT NULL,
+    id_categ INT(10) NOT NULL,
+    id_fotosser INT(10) NOT NULL,
+    CONSTRAINT pk_servicio PRIMARY KEY (id_servicio),
+    CONSTRAINT fk_servicio_categoria FOREIGN KEY (id_categ)
+        REFERENCES Categoria (id_categ)
         ON DELETE RESTRICT
         ON UPDATE CASCADE,
-    CONSTRAINT fk_citas_peluquerias FOREIGN KEY (id_peluqueria)
-        REFERENCES peluquerias (id_peluqueria)
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE,
-    CONSTRAINT fk_citas_servicios FOREIGN KEY (id_servicio)
-        REFERENCES servicios (id_servicio)
-        ON DELETE RESTRICT
-        ON UPDATE CASCADE,
-    CONSTRAINT fk_citas_profesionales FOREIGN KEY (id_profesional)
-        REFERENCES profesionales (id_profesional)
+    CONSTRAINT fk_servicio_fotosser FOREIGN KEY (id_fotosser)
+        REFERENCES Fotosser (id_fotosser)
         ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE = InnoDB;
 
--- ---------------------------------------------------------------------
--- 7. TABLA USUARIOS 
--- ---------------------------------------------------------------------
-CREATE TABLE usuarios (
-    id_usuario INT NOT NULL AUTO_INCREMENT,
-    id_cliente INT NULL,
-    nombre_usuario VARCHAR(50) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    password_hash CHAR(64) NOT NULL, 
-    salt CHAR(32) NOT NULL,
-    rol VARCHAR(30) NOT NULL DEFAULT 'CLIENTE',
-    activo BOOLEAN NOT NULL DEFAULT TRUE,
-    intentos_fallidos INT NOT NULL DEFAULT 0,
-    bloqueado BOOLEAN NOT NULL DEFAULT FALSE,
-    ultimo_acceso DATETIME NULL,
-    fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_usuarios PRIMARY KEY (id_usuario),
-    CONSTRAINT uq_usuarios_nombre UNIQUE (nombre_usuario),
-    CONSTRAINT uq_usuarios_email UNIQUE (email),
-    CONSTRAINT ck_usuarios_rol CHECK (rol IN ('CLIENTE','ADMIN_GENERAL','ADMIN_PELUQUERIA','PROFESIONAL')),
-    CONSTRAINT fk_usuarios_clientes FOREIGN KEY (id_cliente)
-        REFERENCES clientes (id_cliente)
-        ON DELETE SET NULL
+-- 9. Trabajador_Servicio
+CREATE TABLE Trabajador_Servicio (
+    Trabajadorid_trab INT(10) NOT NULL,
+    Servicioid_servicio INT(10) NOT NULL,
+    estado VARCHAR(25) NOT NULL,
+    CONSTRAINT pk_trabajador_servicio PRIMARY KEY (Trabajadorid_trab, Servicioid_servicio),
+    CONSTRAINT fk_ts_trabajador FOREIGN KEY (Trabajadorid_trab)
+        REFERENCES Trabajador (id_trab)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_ts_servicio FOREIGN KEY (Servicioid_servicio)
+        REFERENCES Servicio (id_servicio)
+        ON DELETE RESTRICT
         ON UPDATE CASCADE
 ) ENGINE = InnoDB;
-------------------------------------------------------------------------------------
--- 8. Tabla para registrar el historial de notificaciones y recordatorios automáticos}
--- ---------------------------------------------------------------------------------
-CREATE TABLE notificaciones (
-    id_notificacion INT NOT NULL AUTO_INCREMENT,
-    id_cita INT NOT NULL,
-    tipo_mensaje VARCHAR(50) NOT NULL DEFAULT 'RECORDATORIO_24H', -- Ej: Confirmacion, Recordatorio_24h, Cancelacion
-    canal VARCHAR(20) NOT NULL DEFAULT 'EMAIL',                  -- EMAIL o WHATSAPP
-    estado_envio VARCHAR(20) NOT NULL DEFAULT 'Enviado',         -- Pendiente, Enviado, Fallido
-    fecha_envio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT pk_notificaciones PRIMARY KEY (id_notificacion),
-    CONSTRAINT fk_notificaciones_citas FOREIGN KEY (id_cita)
-        REFERENCES citas (id_cita)
-        ON DELETE CASCADE
+
+-- 10. Tipodocumento
+CREATE TABLE Tipodocumento (
+    id_tdoc INT(10) NOT NULL AUTO_INCREMENT,
+    tdoc TINYINT(3) NOT NULL,
+    CONSTRAINT pk_tipodocumento PRIMARY KEY (id_tdoc)
+) ENGINE = InnoDB;
+
+-- 11. Cliente
+CREATE TABLE Cliente (
+    id_cliente INT(10) NOT NULL AUTO_INCREMENT,
+    nom_clien VARCHAR(50) NOT NULL,
+    ape_clie VARCHAR(50) NOT NULL,
+    numdoc VARCHAR(11) NOT NULL,
+    tlf VARCHAR(11) NOT NULL,
+    correo VARCHAR(20) NOT NULL,
+    Tipodocumentoid_tdoc INT(10) NOT NULL,
+    CONSTRAINT pk_cliente PRIMARY KEY (id_cliente),
+    CONSTRAINT uq_cliente_numdoc UNIQUE (numdoc),
+    CONSTRAINT uq_cliente_tlf UNIQUE (tlf),
+    CONSTRAINT uq_cliente_correo UNIQUE (correo),
+    CONSTRAINT fk_cliente_tipodocumento FOREIGN KEY (Tipodocumentoid_tdoc)
+        REFERENCES Tipodocumento (id_tdoc)
+        ON DELETE RESTRICT
         ON UPDATE CASCADE
+) ENGINE = InnoDB;
+
+-- 12. login
+CREATE TABLE `login` (
+    id INT(10) NOT NULL AUTO_INCREMENT,
+    `user` VARCHAR(20) NOT NULL,
+    id_User INT(10) NOT NULL,
+    pass VARCHAR(8) NOT NULL,
+    CONSTRAINT pk_login PRIMARY KEY (id),
+    CONSTRAINT fk_login_cliente FOREIGN KEY (id_User)
+        REFERENCES Cliente (id_cliente)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE = InnoDB;
+
+-- 13. Estadocita
+CREATE TABLE Estadocita (
+    id_escita INT(10) NOT NULL AUTO_INCREMENT,
+    escita VARCHAR(25) NOT NULL,
+    CONSTRAINT pk_estadocita PRIMARY KEY (id_escita)
+) ENGINE = InnoDB;
+
+-- 14. Reserva
+CREATE TABLE Reserva (
+    id_reserva INT(10) NOT NULL AUTO_INCREMENT,
+    fechor_cita VARCHAR(20) NOT NULL,
+    Estadocitaid_escita VARCHAR(60) NOT NULL,
+    Clienteid_cliente INT(10) NOT NULL,
+    CONSTRAINT pk_reserva PRIMARY KEY (id_reserva),
+    CONSTRAINT fk_reserva_cliente FOREIGN KEY (Clienteid_cliente)
+        REFERENCES Cliente (id_cliente)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE = InnoDB;
+
+-- 15. Reserva_Servicio
+CREATE TABLE Reserva_Servicio (
+    Reservaid_reserva INT(10) NOT NULL,
+    Servicioid_servicio INT(10) NOT NULL,
+    id_trab INT(10) NOT NULL,
+    hora_inicio VARCHAR(10) NOT NULL,
+    hora_fin VARCHAR(10) NOT NULL,
+    Valor VARCHAR(25) NOT NULL,
+    id_escita INT(10) NOT NULL,
+    CONSTRAINT pk_reserva_servicio PRIMARY KEY (Reservaid_reserva, Servicioid_servicio),
+    CONSTRAINT fk_rs_reserva FOREIGN KEY (Reservaid_reserva)
+        REFERENCES Reserva (id_reserva)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_rs_servicio FOREIGN KEY (Servicioid_servicio)
+        REFERENCES Servicio (id_servicio)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_rs_trabajador FOREIGN KEY (id_trab)
+        REFERENCES Trabajador (id_trab)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_rs_estadocita FOREIGN KEY (id_escita)
+        REFERENCES Estadocita (id_escita)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+) ENGINE = InnoDB;
+
+-- 16. Solicitudafi
+CREATE TABLE Solicitudafi (
+    id_solicitud INT(10) NOT NULL AUTO_INCREMENT,
+    nom_prop VARCHAR(50) NOT NULL,
+    docu_prop VARCHAR(11) NOT NULL,
+    tlf VARCHAR(11) NOT NULL,
+    correo VARCHAR(20) NOT NULL,
+    estado VARCHAR(25) NOT NULL,
+    fecha_sol VARCHAR(20) NOT NULL,
+    nom_peluq VARCHAR(50) NOT NULL,
+    direccion VARCHAR(25) NOT NULL,
+    ciudad VARCHAR(10) NOT NULL,
+    fotos_peluq VARCHAR(255) NOT NULL,
+    descripcion VARCHAR(50) NOT NULL,
+    CONSTRAINT pk_solicitudafi PRIMARY KEY (id_solicitud),
+    CONSTRAINT uq_solicitudafi_docu UNIQUE (docu_prop),
+    CONSTRAINT uq_solicitudafi_tlf UNIQUE (tlf),
+    CONSTRAINT uq_solicitudafi_correo UNIQUE (correo)
 ) ENGINE = InnoDB;
