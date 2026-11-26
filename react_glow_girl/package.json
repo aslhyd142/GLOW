@@ -1,0 +1,26 @@
+{
+  "name": "glow-girl-react",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix frontend && npm install --prefix backend"
+  },
+  "version": "1.0.0",
+  "description": "elaborado con react+ Boostrap y mysql",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juliethquevedo/React_3469364_1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/juliethquevedo/React_3469364_1/issues"
+  },
+  "homepage": "https://github.com/juliethquevedo/React_3469364_1#readme",
+  "dependencies": {
+    "express": "^5.3.0",
+    "mysql": "^2.18.1"
+  }
+}
