@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Control de Inventario Textil e Insumos Denim</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 14px; margin: 0; background: #f3f5f9; color: #222; }
+  header { background: #0b3b7a; color: #fff; padding: 12px 20px; display: flex; justify-content: space-between; }
+  main { padding: 20px; max-width: 1100px; margin: auto; }
+  h1 { color: #0b5cad; font-size: 22px; }
+  h2 { color: #0b3b7a; font-size: 16px; margin-top: 0; }
+  .caja { background: #fff; border: 1px solid #dde3ec; padding: 14px; margin-bottom: 16px; }
+  .alerta { background: #fdecec; border: 1px solid #f1b4b4; color: #b3261e; padding: 10px; margin-bottom: 16px; display: none; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #eceff4; text-align: left; font-size: 12px; }
+  th, td { padding: 8px; border-bottom: 1px solid #e5e9f0; }
+  tr.bajo { background: #fdf0f0; color: #c62828; }
+  .ok { color: #1b7f55; font-weight: bold; }
+  .mal { color: #c62828; font-weight: bold; }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  label { display: block; margin-bottom: 10px; font-weight: bold; }
+  select, input { width: 100%; padding: 7px; margin-top: 4px; box-sizing: border-box; }
+  button { background: #0b3b7a; color: #fff; border: 0; padding: 9px 16px; cursor: pointer; }
+  #mensaje { margin-top: 10px; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<header>
+  <span>SENA Ficha 3493478 | Módulo 2: Materiales, Rollos y Movimientos</span>
+  <span>Martha Rodríguez (Administradora)</span>
+</header>
+
+<main>
+  <h1>Control de Inventario Textil e Insumos Denim</h1>
+
+  <div class="alerta" id="alerta"></div>
+
+  <div class="caja">
+    <h2>Maestro de Materiales y Saldos en Almacén</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th><th>Descripción</th><th>Categoría</th><th>Existencia</th>
+          <th>Mínimo</th><th>Ubicación</th><th>Proveedor</th><th>Costo unit. (COP)</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="filas"></tbody>
+    </table>
+  </div>
+
+  <div class="dos">
+    <div class="caja">
+      <h2>Detalle de Rollo</h2>
+      <p><b>Código:</b> R-000123 (MAT-001)</p>
+      <p><b>Tipo:</b> Stretch Azul Oscuro 12 oz</p>
+      <p><b>Lote:</b> L-2409-15</p>
+      <p><b>Ubicación:</b> Bodega A - Estante A-01-2</p>
+      <p><b>Según proveedor:</b> 60,0 m</p>
+      <p><b>Medido en fábrica:</b> 59,2 m</p>
+      <p><b>Diferencia / merma:</b> -0,8 m (-1,33 %) Tolerable</p>
+    </div>
+
+    <div class="caja">
+      <h2>Registro de Movimiento en Bodega</h2>
+      <form id="formulario">
+        <label>Material
+          <select id="material"></select>
+        </label>
+        <label>Orden de producción
+          <select id="orden">
+            <option>OP-0001 - REF-101 (Jean Skinny Tiro Alto)</option>
+            <option>OP-0002 - REF-103 (Jean Recto)</option>
+          </select>
+        </label>
+        <label>Cantidad a despachar
+          <input type="number" id="cantidad" step="0.1" min="0" placeholder="Ej: 59.2">
+        </label>
+        <p>Entrega: <b>Diana Torres</b> (Auxiliar de Almacén) | Recibe: <b>Andrés Gómez</b> (Jefe de Producción)</p>
+        <button type="submit">Registrar salida</button>
+        <p id="mensaje"></p>
+      </form>
+    </div>
+  </div>
+</main>
+
+<script>
+  // Datos de ejemplo tomados del documento del proyecto (Anexo H)
+  // "pedido" = cantidad que ya necesitan las órdenes por cortar
+  var materiales = [
+    { cod: 'MAT-001', nombre: 'Tela denim stretch azul oscuro 12 oz', cat: 'Telas Denim', u: 'm', stock: 444, min: 150, ubic: 'Bodega A (A-01-2)', prov: 'Textiles Denim Ejemplo S.A.S.', costo: 18500, pedido: 0 },
+    { cod: 'MAT-009', nombre: 'Tela denim rígido azul medio 14 oz', cat: 'Telas Denim', u: 'm', stock: 242, min: 120, ubic: 'Bodega A (A-01-3)', prov: 'Textiles Denim Ejemplo S.A.S.', costo: 17000, pedido: 300 },
+    { cod: 'MAT-003', nombre: 'Botón metálico', cat: 'Avíos', u: 'u', stock: 1010, min: 500, ubic: 'Bodega B (B-01-1)', prov: 'Accesorios Jeans Ejemplo', costo: 320, pedido: 0 },
+    { cod: 'MAT-004', nombre: 'Cremallera para jean', cat: 'Avíos', u: 'u', stock: 365, min: 200, ubic: 'Bodega B (B-01-2)', prov: 'Accesorios Jeans Ejemplo', costo: 780, pedido: 0 },
+    { cod: 'MAT-005', nombre: 'Remache metálico', cat: 'Avíos', u: 'u', stock: 1115, min: 600, ubic: 'Bodega B (B-02-1)', prov: 'Accesorios Jeans Ejemplo', costo: 110, pedido: 0 },
+    { cod: 'MAT-008', nombre: 'Aguja para máquina industrial', cat: 'Repuestos', u: 'u', stock: 238, min: 100, ubic: 'Bodega B (B-03-1)', prov: 'Accesorios Jeans Ejemplo', costo: 1200, pedido: 0 },
+    { cod: 'MAT-002', nombre: 'Hilo poliéster azul índigo', cat: 'Hilos', u: 'conos', stock: 69, min: 30, ubic: 'Bodega A (A-04-1)', prov: 'Hilos y Confecciones Demo', costo: 6500, pedido: 0 },
+    { cod: 'MAT-006', nombre: 'Etiqueta de marca', cat: 'Etiquetas', u: 'u', stock: 650, min: 300, ubic: 'Bodega C (C-01-1)', prov: 'Etiquetas y Empaques Ejemplo S.A.S.', costo: 250, pedido: 0 },
+    { cod: 'MAT-007', nombre: 'Bolsa de empaque', cat: 'Empaque', u: 'u', stock: 507, min: 250, ubic: 'Bodega C (C-01-2)', prov: 'Etiquetas y Empaques Ejemplo S.A.S.', costo: 180, pedido: 0 }
+  ];
+
+  function numero(n) {
+    return n.toLocaleString('es-CO');
+  }
+
+  function dibujar() {
+    var filas = '';
+    var alerta = '';
+
+    materiales.forEach(function (m) {
+      var libre = m.stock - m.pedido;
+      var bajo = libre < m.min;
+
+      filas += '<tr class="' + (bajo ? 'bajo' : '') + '">' +
+        '<td><b>' + m.cod + '</b></td>' +
+        '<td>' + m.nombre + '</td>' +
+        '<td>' + m.cat + '</td>' +
+        '<td>' + numero(m.stock) + ' ' + m.u + '</td>' +
+        '<td>' + numero(m.min) + ' ' + m.u + '</td>' +
+        '<td>' + m.ubic + '</td>' +
+        '<td>' + m.prov + '</td>' +
+        '<td>$ ' + numero(m.costo) + '</td>' +
+        '<td class="' + (bajo ? 'mal' : 'ok') + '">' + (bajo ? 'Bajo stock' : 'Normal') + '</td>' +
+        '</tr>';
+
+      if (bajo) {
+        alerta += '<b>Alerta de inventario:</b> ' + m.cod + ' (' + m.nombre + ') requiere reposición urgente.';
+        if (m.pedido > 0) {
+          alerta += ' Stock disponible: ' + numero(m.stock) + ' ' + m.u + ' de ' + numero(m.pedido) + ' ' + m.u + ' requeridos para la orden OP-0002 (Jean Recto REF-103).';
+        }
+        alerta += '<br>';
+      }
+    });
+
+    document.getElementById('filas').innerHTML = filas;
+
+    var caja = document.getElementById('alerta');
+    caja.innerHTML = alerta;
+    caja.style.display = alerta ? 'block' : 'none';
+  }
+
+  // Lista de materiales en el formulario
+  var lista = '';
+  materiales.forEach(function (m) {
+    lista += '<option value="' + m.cod + '">' + m.cod + ' - ' + m.nombre + '</option>';
+  });
+  document.getElementById('material').innerHTML = lista;
+
+  // Registrar una salida
+  document.getElementById('formulario').onsubmit = function (e) {
+    e.preventDefault();
+    var mensaje = document.getElementById('mensaje');
+    var cod = document.getElementById('material').value;
+    var cantidad = parseFloat(document.getElementById('cantidad').value);
+    var m = materiales.filter(function (x) { return x.cod === cod; })[0];
+
+    if (!(cantidad > 0)) {
+      mensaje.style.color = '#c62828';
+      mensaje.textContent = 'Escriba una cantidad mayor que cero.';
+      return;
+    }
+    if (cantidad > m.stock) {
+      mensaje.style.color = '#c62828';
+      mensaje.textContent = 'No hay suficiente. Disponible: ' + numero(m.stock) + ' ' + m.u + '.';
+      return;
+    }
+
+    m.stock = Math.round((m.stock - cantidad) * 100) / 100;
+    dibujar();
+    document.getElementById('cantidad').value = '';
+    mensaje.style.color = '#1b7f55';
+    mensaje.textContent = 'Salida registrada: ' + numero(cantidad) + ' ' + m.u + ' de ' + m.cod + '.';
+  };
+
+  dibujar();
+</script>
+
+</body>
+</html>
