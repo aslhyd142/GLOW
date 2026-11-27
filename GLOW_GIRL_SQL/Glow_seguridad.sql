@@ -1,4 +1,4 @@
-/* =====================================================================
+We're not supposed to be DOING THE GENERAL ADMINISTRATOR PART. USE glow_girl;
    SEGURIDAD EN BASE DE DATOS - GLOW GIRL (HASH + SALT SHA2)
    ===================================================================== */
 
@@ -202,4 +202,23 @@ SELECT @res_login AS resultado_login;
 CALL sp_cambiar_clave_glow('ana_gomez', 'GlowGirl2026', 'NuevaGlow2026', @res_cambio);
 SELECT @res_cambio AS resultado_cambio;
 
-SELECT * FROM Auditoria_Seguridad;
+SELECT * FROM Security_Audit;
+
+--9 Admins
+USE glow_girl;
+
+CALL sp_registrar_cuenta_glow(
+    'Aslhy_Diaz',
+    'aslhydiaz@correo.com',
+    'Glow2026',
+    'ADMIN',
+    NULL
+);
+
+CALL sp_registrar_cuenta_glow(
+    'Julieth_Quevedo',
+    'juliethquevedo@correo.com',
+    'Glow2026',
+    'ADMIN',
+    NULL
+);

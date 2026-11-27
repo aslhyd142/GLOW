@@ -28,63 +28,97 @@ async function login(req, res) {
       return res.status(400).json({mensaje: 'El correo y la contraseña son obligatorias'});
     }
 
-    // 2 buscar el usuario por el email en la tabla usuarios
-    // usamos "?" en la consulta (no concatenamos el email directo)
-    // para evitar inyeccion SQL; mysql2 se encarga de escaparlo
-    const [filas] = await pool.query(
-      'SELECT id, nombre, email, password, rol, estado FROM usuarios WHERE email = ? LIMIT 1', [email]
-    );
-
-    // Si no encuentro ninguna fila, el correo no existe
-    if (filas.length === 0) {
-      return res.status(401).json ({mensaje: "Correo o contraseña incorrectos" });
+    // 2 Buscar el administrador creado por el seed.
+    let usuario = null;
+    try {
+      const [filas] = await pool.query(
+        'SELECT id, nombre, email, password, rol, estado FROM usuarios WHERE email = ? LIMIT 1',
+        [email]
+      );
+      usuario = filas[0] || null;
+    } catch (error) {
+      if (error.code !== 'ER_NO_SUCH_TABLE') throw error;
     }
 
-    // pool.query con SELECT siempre delvuelve un arreglo de filas; como
-    // buscamos por email (unico), nos quedamos con la primera fila y unica fila
-    const usuario = filas[0];
+    if (usuario) {
+      if (usuario.estado === 0) {
+        return res.status(403).json({
+          mensaje: 'Este usuario esta desactivado. contacte al administrador '
+        });
+      }
 
-    // si el usuario fue desactivado no dejamos iniciar sesion
-    //aunque la contraseña sea correcta
-    if (usuario.estado === 0) {
+      const passwordCorrecta = await bcrypt.compare(password, usuario.password);
+      if (!passwordCorrecta) {
+        return res.status(401).json({
+          mensaje: 'Correo o contraseña incorrectos'
+        });
+      }
+
+      const token = jwt.sign(
+        { id: usuario.id, email: usuario.email, rol: usuario.rol },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '8h'}
+      );
+
+      return res.json({
+        token,
+        usuario:{
+          nombre: usuario.nombre,
+          email: usuario.email,
+          rol: usuario.rol,
+        },
+      });
+    }
+
+    // 3 Buscar también cuentas creadas con Glow_seguridad.sql.
+    // Se permite usar usuario_login o correo.
+    const [cuentas] = await pool.query(
+      `SELECT id_cuenta, usuario_login, correo, rol, activo
+       FROM Cuenta_Acceso
+       WHERE usuario_login = ? OR correo = ?
+       LIMIT 1`,
+      [email, email]
+    );
+
+    if (cuentas.length === 0) {
+      return res.status(401).json({mensaje: 'Correo o contraseña incorrectos'});
+    }
+
+    const cuenta = cuentas[0];
+    if (!cuenta.activo) {
       return res.status(403).json({
         mensaje: 'Este usuario esta desactivado. contacte al administrador '
       });
     }
 
-    /**
-     * comparar la contraseña que envio el formulario con el hash
-     * guardado en la base de datos bcrypt compare vuelve a aplicar
-     * el mismo algoritmo y revisa si el resultado coincide la 
-     * contraseña original nunca se puede desencriptar 
-     */
-    const passwordCorrecta = await bcrypt.compare(password, usuario.password);
-    if (!passwordCorrecta) {
-      return res.status(401).json({
-        mensaje: 'Correo o contraseña incorrectos'
-      });
+    const conexion = await pool.getConnection();
+    let mensajeLogin;
+
+    try {
+      await conexion.query('CALL sp_login_glow(?, ?, @res_login)', [cuenta.usuario_login, password]);
+      const [resultado] = await conexion.query('SELECT @res_login AS resultado');
+      mensajeLogin = resultado[0]?.resultado;
+    } finally {
+      conexion.release();
     }
 
-    /**
-     * generar el token JWT que el frontend guardara para
-     * demostrar, en cada peticion futura que ya inicio sesion
-     */
+    if (mensajeLogin !== 'Acceso concedido') {
+      const estado = mensajeLogin === 'Cuenta bloqueada. Contacte al administrador' ? 403 : 401;
+      return res.status(estado).json({mensaje: mensajeLogin});
+    }
+
     const token = jwt.sign(
-      { id: usuario.id, email: usuario.email, rol: usuario.rol },
+      { id: cuenta.id_cuenta, email: cuenta.correo, rol: cuenta.rol },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h'}
     );
 
-    /**
-     * Responder token con los datos publicos del usuario
-     * NUNCA se devuelve el hash de la contraseña al frontend 
-     */
-    return res.json ({
+    return res.json({
       token,
-      usuario:{
-          nombre:usuario.nombre,
-          email:usuario.email,
-          rol:usuario.rol,
+      usuario: {
+        nombre: cuenta.usuario_login,
+        email: cuenta.correo,
+        rol: cuenta.rol,
       },
     });
 
