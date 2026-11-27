@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 25-11-2026 a las 21:53:26
+-- Tiempo de generación: 27-11-2026 a las 21:25:03
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -20,6 +20,134 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `glow_girl`
 --
+
+DELIMITER $$
+--
+-- Procedimientos
+--
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_cambiar_clave_glow` (IN `p_usuario_login` VARCHAR(50), IN `p_password_actual` VARCHAR(100), IN `p_password_nueva` VARCHAR(100), OUT `p_resultado` VARCHAR(100))   BEGIN
+    DECLARE v_salt_nuevo CHAR(32);
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM Cuenta_Acceso
+        WHERE usuario_login = p_usuario_login
+          AND password_hash = SHA2(CONCAT(salt, p_password_actual), 256)
+    ) THEN
+        SET p_resultado = 'La contraseña actual no es correcta';
+    ELSEIF CHAR_LENGTH(p_password_nueva) < 8
+       OR CAST(p_password_nueva AS BINARY) = CAST(LOWER(p_password_nueva) AS BINARY)
+       OR p_password_nueva NOT REGEXP '[0-9]' THEN
+        SET p_resultado = 'La nueva contraseña no cumple con la política';
+    ELSE
+        SET v_salt_nuevo = LEFT(SHA2(CONCAT(UUID(), RAND(), NOW(6)), 256), 32);
+
+        UPDATE Cuenta_Acceso
+        SET salt = v_salt_nuevo,
+            password_hash = SHA2(CONCAT(v_salt_nuevo, p_password_nueva), 256)
+        WHERE usuario_login = p_usuario_login;
+
+        SET p_resultado = 'Contraseña actualizada correctamente';
+    END IF;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_login_glow` (IN `p_usuario_login` VARCHAR(50), IN `p_password` VARCHAR(100), OUT `p_resultado` VARCHAR(100))   BEGIN
+    DECLARE v_id INT DEFAULT NULL;
+    DECLARE v_hash CHAR(64);
+    DECLARE v_salt CHAR(32);
+    DECLARE v_bloqueado BOOLEAN DEFAULT FALSE;
+    DECLARE v_intentos INT DEFAULT 0;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_id = NULL;
+
+    SELECT
+        id_cuenta,
+        password_hash,
+        salt,
+        bloqueado,
+        intentos_fallidos
+    INTO
+        v_id,
+        v_hash,
+        v_salt,
+        v_bloqueado,
+        v_intentos
+    FROM Cuenta_Acceso
+    WHERE usuario_login = p_usuario_login
+      AND activo = TRUE;
+
+    IF v_id IS NULL THEN
+        SET p_resultado = 'Usuario o contraseña incorrectos';
+    ELSEIF v_bloqueado THEN
+        SET p_resultado = 'Cuenta bloqueada. Contacte al administrador';
+    ELSEIF v_hash = SHA2(CONCAT(v_salt, p_password), 256) THEN
+        UPDATE Cuenta_Acceso
+        SET intentos_fallidos = 0,
+            ultimo_acceso = NOW()
+        WHERE id_cuenta = v_id;
+        SET p_resultado = 'Acceso concedido';
+    ELSE
+        UPDATE Cuenta_Acceso
+        SET intentos_fallidos = COALESCE(v_intentos, 0) + 1,
+            bloqueado = (COALESCE(v_intentos, 0) + 1 >= 3)
+        WHERE id_cuenta = v_id;
+        SET p_resultado = 'Usuario o contraseña incorrectos';
+    END IF;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_cuenta_glow` (IN `p_usuario_login` VARCHAR(50), IN `p_correo` VARCHAR(100), IN `p_password` VARCHAR(100), IN `p_rol` VARCHAR(20), IN `p_id_cliente` INT)   BEGIN
+    DECLARE v_salt CHAR(32);
+
+    IF CHAR_LENGTH(p_password) < 8
+       OR CAST(p_password AS BINARY) = CAST(LOWER(p_password) AS BINARY)
+       OR p_password NOT REGEXP '[0-9]' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'La contraseña debe tener mínimo 8 caracteres, una mayúscula y un número';
+    END IF;
+
+    SET v_salt = LEFT(SHA2(CONCAT(UUID(), RAND(), NOW(6)), 256), 32);
+
+    INSERT INTO Cuenta_Acceso (
+        id_cliente,
+        usuario_login,
+        correo,
+        password_hash,
+        salt,
+        rol
+    )
+    VALUES (
+        p_id_cliente,
+        p_usuario_login,
+        p_correo,
+        SHA2(CONCAT(v_salt, p_password), 256),
+        v_salt,
+        p_rol
+    );
+END$$
+
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `auditoria_seguridad`
+--
+
+CREATE TABLE `auditoria_seguridad` (
+  `id_auditoria` int(11) NOT NULL,
+  `id_cuenta` int(11) NOT NULL,
+  `accion` varchar(30) NOT NULL,
+  `detalle` varchar(255) DEFAULT NULL,
+  `usuario_bd` varchar(100) NOT NULL,
+  `fecha` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `auditoria_seguridad`
+--
+
+INSERT INTO `auditoria_seguridad` (`id_auditoria`, `id_cuenta`, `accion`, `detalle`, `usuario_bd`, `fecha`) VALUES
+(1, 1, 'CAMBIO_PASSWORD', 'Se actualizó el hash de contraseña', 'root@localhost', '2026-11-27 14:47:29');
 
 -- --------------------------------------------------------
 
@@ -69,6 +197,55 @@ INSERT INTO `cliente` (`id_cliente`, `nom_clien`, `ape_clie`, `numdoc`, `tlf`, `
 (3, 'Luisa', 'Martinez Rios', '1003003003', '3023334455', 'luisa@correo.com', 'CC'),
 (4, 'Juan David', 'Restrepo', '1004004004', '3034445566', 'juan@correo.com', 'TI'),
 (5, 'Valentina', 'Herrera', '1005005005', '3045556677', 'val@correo.com', 'CE');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cuenta_acceso`
+--
+
+CREATE TABLE `cuenta_acceso` (
+  `id_cuenta` int(11) NOT NULL,
+  `id_cliente` int(11) DEFAULT NULL,
+  `usuario_login` varchar(50) NOT NULL,
+  `correo` varchar(100) NOT NULL,
+  `password_hash` char(64) NOT NULL,
+  `salt` char(32) NOT NULL,
+  `rol` varchar(20) NOT NULL DEFAULT 'CLIENTE',
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `intentos_fallidos` int(11) NOT NULL DEFAULT 0,
+  `bloqueado` tinyint(1) NOT NULL DEFAULT 0,
+  `ultimo_acceso` datetime DEFAULT NULL,
+  `fecha_creacion` datetime NOT NULL DEFAULT current_timestamp()
+) ;
+
+--
+-- Volcado de datos para la tabla `cuenta_acceso`
+--
+
+INSERT INTO `cuenta_acceso` (`id_cuenta`, `id_cliente`, `usuario_login`, `correo`, `password_hash`, `salt`, `rol`, `activo`, `intentos_fallidos`, `bloqueado`, `ultimo_acceso`, `fecha_creacion`) VALUES
+(1, 1, 'ana_gomez', 'ana@correo.com', '4ae959947b96d1870a1c0e71a67c7238ac9060b027eee3625bf9edbdf19309dd', '246830876373c1a2a9a23e50a4003271', 'CLIENTE', 1, 0, 0, '2026-11-27 14:47:29', '2026-11-27 14:47:29'),
+(2, 2, 'carlos_p', 'carlos@correo.com', '48145be0b517f40f3743af351c6bd8108a020c4b2e5d226c5e9d2bf75d790cf4', 'c5cc92ce8d3db0f1eb0019fa1780f865', 'CLIENTE', 1, 0, 0, NULL, '2026-11-27 14:47:29'),
+(3, NULL, 'Aslhy_Diaz', 'aslhydiaz@correo.com', '651c64c9a3af1459f919975b5efcec17d8cd9bc3561864af5be43758ccd3fd13', '535fa807aa304fbd479dcfb0ecdc64ba', 'ADMIN', 1, 0, 0, '2026-11-27 15:06:56', '2026-11-27 14:51:47'),
+(4, NULL, 'Julieth_Quevedo', 'juliethquevedo@correo.com', '78fbbaade12b717dd49565999cbbc732985c65752443a1ee1f8b5ca68158a777', '5b5468574c1236d51652036917ad1c81', 'ADMIN', 1, 0, 0, '2026-11-27 15:10:11', '2026-11-27 14:51:47');
+
+--
+-- Disparadores `cuenta_acceso`
+--
+DELIMITER $$
+CREATE TRIGGER `trg_cuenta_acceso_auditoria` AFTER UPDATE ON `cuenta_acceso` FOR EACH ROW BEGIN
+    IF NOT (NEW.password_hash <=> OLD.password_hash) THEN
+        INSERT INTO Auditoria_Seguridad (id_cuenta, accion, detalle, usuario_bd)
+        VALUES (NEW.id_cuenta, 'CAMBIO_PASSWORD', 'Se actualizó el hash de contraseña', CURRENT_USER());
+    END IF;
+
+    IF NEW.bloqueado = TRUE AND OLD.bloqueado = FALSE THEN
+        INSERT INTO Auditoria_Seguridad (id_cuenta, accion, detalle, usuario_bd)
+        VALUES (NEW.id_cuenta, 'BLOQUEO', 'Bloqueada tras 3 intentos fallidos', CURRENT_USER());
+    END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -320,9 +497,38 @@ INSERT INTO `trabajador_servicio` (`Trabajadorid_trab`, `Servicioid_servicio`) V
 (4, 5),
 (5, 6);
 
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuarios`
+--
+
+CREATE TABLE `usuarios` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `rol` varchar(20) NOT NULL DEFAULT 'admin',
+  `estado` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `usuarios`
+--
+
+INSERT INTO `usuarios` (`id`, `nombre`, `email`, `password`, `rol`, `estado`) VALUES
+(1, 'Administrador', 'admin@inventario.com', '$2b$10$jnTQxvdGjvW7u/JmlokThu1VSlD.OCrUFOuFtzTc8RfqZFSFcT6oG', 'admin', 1);
+
 --
 -- Índices para tablas volcadas
 --
+
+--
+-- Indices de la tabla `auditoria_seguridad`
+--
+ALTER TABLE `auditoria_seguridad`
+  ADD PRIMARY KEY (`id_auditoria`),
+  ADD KEY `fk_auditoria_cuenta` (`id_cuenta`);
 
 --
 -- Indices de la tabla `categoria`
@@ -338,6 +544,15 @@ ALTER TABLE `cliente`
   ADD UNIQUE KEY `uq_cliente_numdoc` (`numdoc`),
   ADD UNIQUE KEY `uq_cliente_tlf` (`tlf`),
   ADD UNIQUE KEY `uq_cliente_correo` (`correo`);
+
+--
+-- Indices de la tabla `cuenta_acceso`
+--
+ALTER TABLE `cuenta_acceso`
+  ADD PRIMARY KEY (`id_cuenta`),
+  ADD UNIQUE KEY `uq_cuenta_usuario` (`usuario_login`),
+  ADD UNIQUE KEY `uq_cuenta_correo` (`correo`),
+  ADD KEY `fk_cuenta_cliente` (`id_cliente`);
 
 --
 -- Indices de la tabla `fotospe`
@@ -410,8 +625,21 @@ ALTER TABLE `trabajador_servicio`
   ADD KEY `fk_ts_servicio` (`Servicioid_servicio`);
 
 --
+-- Indices de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_usuarios_email` (`email`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
+
+--
+-- AUTO_INCREMENT de la tabla `auditoria_seguridad`
+--
+ALTER TABLE `auditoria_seguridad`
+  MODIFY `id_auditoria` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `categoria`
@@ -424,6 +652,12 @@ ALTER TABLE `categoria`
 --
 ALTER TABLE `cliente`
   MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT de la tabla `cuenta_acceso`
+--
+ALTER TABLE `cuenta_acceso`
+  MODIFY `id_cuenta` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `fotospe`
@@ -474,8 +708,26 @@ ALTER TABLE `trabajador`
   MODIFY `id_trab` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- Restricciones para tablas volcadas
 --
+
+--
+-- Filtros para la tabla `auditoria_seguridad`
+--
+ALTER TABLE `auditoria_seguridad`
+  ADD CONSTRAINT `fk_auditoria_cuenta` FOREIGN KEY (`id_cuenta`) REFERENCES `cuenta_acceso` (`id_cuenta`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Filtros para la tabla `cuenta_acceso`
+--
+ALTER TABLE `cuenta_acceso`
+  ADD CONSTRAINT `fk_cuenta_cliente` FOREIGN KEY (`id_cliente`) REFERENCES `cliente` (`id_cliente`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `horario`
