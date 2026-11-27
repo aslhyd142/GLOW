@@ -1,26 +1,29 @@
 import { createContext, useContext, useMemo, useState } from 'react';
-import axios from 'axios';
+import api from '../services/api.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(() => {
-    const guardado = localStorage.getItem('usuario');
+    const guardado = localStorage.getItem('token') && localStorage.getItem('usuario');
     return guardado ? JSON.parse(guardado) : null;
   });
 
   async function login(email, password) {
-    const respuesta = await axios.post('http://localhost:4000/api/auth/login', {
-      email,
-      password,
-    });
+    const respuesta = await api.post('/auth/login', { email, password });
 
     localStorage.setItem('token', respuesta.data.token);
     localStorage.setItem('usuario', JSON.stringify(respuesta.data.usuario));
     setUsuario(respuesta.data.usuario);
   }
 
-  const value = useMemo(() => ({ usuario, login }), [usuario]);
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    setUsuario(null);
+  }
+
+  const value = useMemo(() => ({ usuario, login, logout }), [usuario]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
