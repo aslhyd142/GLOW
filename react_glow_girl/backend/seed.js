@@ -26,6 +26,19 @@ async function crearUsuarioAdmin() {
   const passwordPlano = process.env.SEED_ADMIN_PASSWORD || 'Admin123!';
 
   try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id INT NOT NULL AUTO_INCREMENT,
+        nombre VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        rol VARCHAR(20) NOT NULL DEFAULT 'admin',
+        estado TINYINT(1) NOT NULL DEFAULT 1,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_usuarios_email (email)
+      ) ENGINE=InnoDB
+    `);
+
     // Revisamos si ya existe un usuario con ese correo, para no
     // duplicarlo cada vez que se corra el script.
     const [existentes] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
