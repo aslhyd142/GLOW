@@ -17,6 +17,7 @@ const cors = require('cors');
 require('dotenv').config();
 //importamos el router con los enhpoint de autenticacion (login y perfil)
 const authRoutes = require('./routes/auth.routes');
+const adminRoutes = require('./routes/admin.routes');
 //creamos la aplicacion de express 
 const app = express();
 //corst()permite que el frontend (que corre en otro puerto)
@@ -31,6 +32,7 @@ app.get('/',(req,rest)=>{
 });
 //todas las rutas que empiecen con api/auth se resuelven en authroutes.js
 app.use('/api/auth',authRoutes);
+app.use('/api/admin', adminRoutes);
 // Middleware para rutas que no existen (404)
 app.use((req, res) => {
   res.status(404).json({ mensaje: 'ruta no encontrada' });
